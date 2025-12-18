@@ -22,7 +22,8 @@ jobs:
 
       - name: Install Luacheck
         run: |
-          luarocks install luacheck
+          luarocks install luacheck --local
+          echo "$HOME/.luarocks/bin" >> $GITHUB_PATH
 
       - name: Run Luacheck
         run: |

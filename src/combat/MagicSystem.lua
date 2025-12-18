@@ -23,34 +23,34 @@ function MagicSystem.castSpell(spellId, caster, target)
     if not MagicSystem.spells[spellId] then
         return false
     end
-    
+
     local spell = MagicSystem.spells[spellId]
-    
+
     -- Check mana
     if caster.mana < spell.manaCost then
         return false
     end
-    
+
     -- Check cooldown
     if spell.cooldown and spell.cooldown > 0 then
         return false
     end
-    
+
     -- Consume mana
     caster:setMana(caster.mana - spell.manaCost)
-    
+
     -- Apply spell effect
     if spell.effect == "damage" and target then
         target:takeDamage(spell.damage or 10)
     elseif spell.effect == "heal" and target then
         target:setHealth(target.health + (spell.healAmount or 10))
     end
-    
+
     -- Set cooldown
     if spell.cooldownTime then
         spell.cooldown = spell.cooldownTime
     end
-    
+
     return true
 end
 
