@@ -109,14 +109,12 @@ function QuestSystem.completeQuest(questId)
         if quest.rewards.experience then
             -- Would need player reference
             -- TODO: Implement experience reward
-            _ = nil -- Placeholder
         end
 
         -- Give items
         if quest.rewards.items then
             -- Would need inventory reference
             -- TODO: Implement item rewards
-            _ = nil -- Placeholder
         end
     end
 

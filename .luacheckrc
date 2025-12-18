@@ -32,4 +32,5 @@ exclude_files = {
 ignore = {
     "212", -- Unused argument
     "213", -- Unused loop variable
+    "542", -- Empty if branch (intentional placeholders for future implementation)
 }
