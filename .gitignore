@@ -1,10 +1,15 @@
 # Compiled Lua sources
 luac.out
+*.luac
 
 # luarocks build files
 *.src.rock
 *.zip
 *.tar.gz
+
+# LuaRocks local installs
+lua_modules/
+.luarocks/
 
 # Object files
 *.o
@@ -38,4 +43,22 @@ luac.out
 *.i*86
 *.x86_64
 *.hex
+
+# Environment files
+.env
+
+# Output files
+output/*.json
+output/*.txt
+output/*.lua
+!output/.gitkeep
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
