@@ -56,6 +56,16 @@ function love.load()
     src.combat.CombatSystem = require("src.combat.CombatSystem")
     src.combat.CombatSystem.init()
 
+    -- Initialize magic system
+    src.combat.MagicSystem = require("src.combat.MagicSystem")
+    src.combat.MagicSystem.init()
+
+    -- Load spell data
+    src.data.Spells = require("src.data.Spells")
+    for spellId, spellData in pairs(src.data.Spells.getAllSpells()) do
+        src.combat.MagicSystem.registerSpell(spellId, spellData)
+    end
+
     -- Initialize crafting system
     src.crafting = {}
     src.crafting.CraftingSystem = require("src.crafting.CraftingSystem")
@@ -71,6 +81,10 @@ function love.load()
     src.save = {}
     src.save.SaveSystem = require("src.save.SaveSystem")
     src.save.SaveSystem.init()
+
+    -- Initialize loot system
+    src.inventory.Loot = require("src.inventory.Loot")
+    src.inventory.Loot.init()
 
     -- Initialize UI systems
     src.ui.UIManager.init()
@@ -118,6 +132,7 @@ function love.load()
         showCrafting = false,
         showQuestLog = false,
         showStats = false,
+        showSkillTree = false,
         enter = function(self)
             print("Entered game state")
 
@@ -130,6 +145,10 @@ function love.load()
             local Inventory = require("src.inventory.Inventory")
             self.player.inventory = Inventory.new(30)
             self.player.stats:setLevel(1)
+
+            -- Give player starting spells
+            self.player:learnSpell("heal")
+            self.player:learnSpell("fireball")
 
             -- Initialize HUD
             local HUD = require("src.ui.HUD")
@@ -159,6 +178,12 @@ function love.load()
             self.statsUI = StatsUI.new()
             self.statsUI.visible = false
             src.ui.UIManager.addElement("stats", self.statsUI)
+
+            -- Initialize Skill Tree UI
+            local SkillTreeUI = require("src.ui.SkillTreeUI")
+            self.skillTreeUI = SkillTreeUI.new()
+            self.skillTreeUI.visible = false
+            src.ui.UIManager.addElement("skilltree", self.skillTreeUI)
 
             -- Load starting realm
             local realm = src.world.World.loadRealm("starting_realm")
@@ -271,6 +296,14 @@ function love.load()
                 -- Update world
                 src.world.World.update(dt)
 
+                -- Update loot system
+                src.inventory.Loot.update(dt)
+
+                -- Auto-collect loot when player walks over it
+                if self.player and self.player.inventory then
+                    src.inventory.Loot.checkCollection(self.player, self.player.inventory)
+                end
+
                 -- Update player
                 if self.player then
                     self.player:update(dt, src.core.Input)
@@ -278,6 +311,20 @@ function love.load()
                     -- Handle player attack
                     if src.core.Input.wasPressed("attack") and not self.showDialogue and not self.showInventory and not self.showQuestLog and not self.showStats and not self.showCrafting then
                         self.player:attack(self.enemies)
+                    end
+
+                    -- Handle spell casting (1-4 keys for quick spells)
+                    if not self.showDialogue and not self.showInventory and not self.showQuestLog and not self.showStats and not self.showCrafting then
+                        local knownSpells = self.player:getKnownSpells()
+                        if src.core.Input.wasPressed("1") and knownSpells[1] then
+                            self.player:castSpell(knownSpells[1].id, self.enemies)
+                        elseif src.core.Input.wasPressed("2") and knownSpells[2] then
+                            self.player:castSpell(knownSpells[2].id, self.enemies)
+                        elseif src.core.Input.wasPressed("3") and knownSpells[3] then
+                            self.player:castSpell(knownSpells[3].id, self.enemies)
+                        elseif src.core.Input.wasPressed("4") and knownSpells[4] then
+                            self.player:castSpell(knownSpells[4].id, self.enemies)
+                        end
                     end
 
                     -- Check for NPC interactions
@@ -299,6 +346,11 @@ function love.load()
                                     break
                                 end
                             end
+
+                            -- Check for chest interactions
+                            if not self.showCrafting and self.player.inventory then
+                                src.inventory.Loot.checkChest(self.player, self.player.inventory)
+                            end
                         end
                     end
 
@@ -318,6 +370,12 @@ function love.load()
                     if src.core.Input.wasPressed("c") and not self.showInventory and not self.showQuestLog then
                         self.showStats = not self.showStats
                         self.statsUI.visible = self.showStats
+                    end
+
+                    -- Toggle skill tree
+                    if src.core.Input.wasPressed("k") and not self.showInventory and not self.showQuestLog and not self.showStats then
+                        self.showSkillTree = not self.showSkillTree
+                        self.skillTreeUI.visible = self.showSkillTree
                     end
                 end
 
@@ -362,6 +420,17 @@ function love.load()
                 -- Update combat system
                 src.combat.CombatSystem.update(dt, self.player)
 
+                -- Update magic system
+                src.combat.MagicSystem.update(dt)
+
+                -- Complete spell casting if cast time finished
+                if self.player and self.player.castingSpell then
+                    if self.player.castTimer <= 0 then
+                        self.player:executeSpell(self.player.castingSpell, self.enemies)
+                        self.player.castingSpell = nil
+                    end
+                end
+
                 -- Update enemies
                 for i = #self.enemies, 1, -1 do
                     local enemy = self.enemies[i]
@@ -402,6 +471,9 @@ function love.load()
                 enemy:draw()
             end
 
+            -- Draw loot drops and chests
+            src.inventory.Loot.draw()
+
             -- Draw player
             if self.player then
                 self.player:draw()
@@ -428,6 +500,10 @@ function love.load()
 
             if self.statsUI and self.showStats and self.player then
                 self.statsUI:draw(self.player.stats)
+            end
+
+            if self.skillTreeUI and self.showSkillTree and self.player then
+                self.skillTreeUI:draw(self.player.stats)
             end
 
             -- Draw dialogue
@@ -536,7 +612,30 @@ function love.load()
             if self.player then
                 local health, maxHealth = self.player:getHealth()
                 love.graphics.print("Health: " .. math.floor(health) .. "/" .. maxHealth, 10, 25)
-                love.graphics.print("I: Inventory | Q: Quest Log | C: Stats | E: Interact | J/Z: Attack", 10, 40)
+                local knownSpells = self.player:getKnownSpells()
+                local spellText = "I: Inventory | Q: Quest Log | C: Stats | K: Skills | E: Interact | J/Z: Attack"
+                if #knownSpells > 0 then
+                    spellText = spellText .. " | 1-4: Spells"
+                end
+                love.graphics.print(spellText, 10, 40)
+
+                -- Show known spells with cooldowns
+                if #knownSpells > 0 then
+                    local spellY = 55
+                    for i, spell in ipairs(knownSpells) do
+                        if spell.data then
+                            local Spells = require("src.data.Spells")
+                            local spellData = Spells.getSpell(spell.id)
+                            local cooldown = spellData and spellData.cooldown or 0
+                            local manaText = string.format("%d: %s (%d mana)", i, spell.data.name, spell.data.manaCost)
+                            if cooldown > 0 then
+                                manaText = manaText .. string.format(" [CD: %.1fs]", cooldown)
+                            end
+                            love.graphics.print(manaText, 10, spellY)
+                            spellY = spellY + 15
+                        end
+                    end
+                end
             end
 
             src.core.Resolution.finish()
@@ -553,6 +652,9 @@ function love.load()
                 elseif self.showStats then
                     self.showStats = false
                     self.statsUI.visible = false
+                elseif self.showSkillTree then
+                    self.showSkillTree = false
+                    self.skillTreeUI.visible = false
                 elseif self.showCrafting then
                     self.showCrafting = false
                     self.craftingUI:close()
@@ -570,6 +672,11 @@ function love.load()
                 self.statsUI:keypressed(key, self.player.stats)
                 if not self.statsUI.visible then
                     self.showStats = false
+                end
+            elseif self.skillTreeUI and self.showSkillTree and self.player then
+                self.skillTreeUI:keypressed(key, self.player.stats)
+                if not self.skillTreeUI.visible then
+                    self.showSkillTree = false
                 end
             end
         end

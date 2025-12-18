@@ -97,9 +97,21 @@ function Enemy:die()
         end
     end
 
-    -- Drop loot
+    -- Drop loot based on enemy data
     local Loot = require("src.inventory.Loot")
-    Loot.createDrop("potion_health", self.x, self.y, 1)
+    local Enemies = require("src.data.Enemies")
+    local enemyData = Enemies.getEnemyData(self.enemyType)
+
+    if enemyData and enemyData.loot then
+        for _, lootEntry in ipairs(enemyData.loot) do
+            if math.random() < lootEntry.chance then
+                Loot.createDrop(lootEntry.id, self.x, self.y, lootEntry.quantity or 1)
+            end
+        end
+    else
+        -- Fallback: drop basic health potion
+        Loot.createDrop("potion_health", self.x, self.y, 1)
+    end
 end
 
 function Enemy:draw()

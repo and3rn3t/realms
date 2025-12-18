@@ -42,6 +42,12 @@ function Player.new(x, y)
     self.attackDuration = 0.2
     self.attackTimer = 0
 
+    -- Magic properties
+    self.knownSpells = {} -- List of spell IDs the player knows
+    self.selectedSpell = nil -- Currently selected spell
+    self.castingSpell = nil -- Spell being cast
+    self.castTimer = 0
+
     return self
 end
 
@@ -144,6 +150,14 @@ function Player:update(dt, input)
         end
     end
 
+    -- Update spell casting
+    if self.castingSpell then
+        self.castTimer = self.castTimer - dt
+        if self.castTimer <= 0 then
+            self.castingSpell = nil
+        end
+    end
+
     -- Handle collision if bump.lua is available
     if self.collisionWorld then
         local actualX, actualY = self.collisionWorld:move(
@@ -179,6 +193,22 @@ function Player:draw()
             love.graphics.arc("fill", centerX, centerY, attackRadius, math.pi / 2, 3 * math.pi / 2)
         elseif self.facing == "right" then
             love.graphics.arc("fill", centerX, centerY, attackRadius, 3 * math.pi / 2, math.pi / 2)
+        end
+    end
+
+    -- Draw spell casting indicator
+    if self.castingSpell then
+        local centerX = self.x + self.width / 2
+        local centerY = self.y + self.height / 2
+        local Spells = require("src.data.Spells")
+        local spellData = Spells.getSpell(self.castingSpell)
+
+        if spellData then
+            local progress = 1 - (self.castTimer / (spellData.castTime or 0.5))
+            love.graphics.setColor(0.5, 0.2, 1, 0.5)
+            love.graphics.circle("line", centerX, centerY, 20 + progress * 10, 32)
+            love.graphics.setColor(0.5, 0.2, 1, 0.3)
+            love.graphics.circle("fill", centerX, centerY, 20 + progress * 10, 32)
         end
     end
 
@@ -327,6 +357,110 @@ function Player:getAttackDamage()
         baseDamage = baseDamage + equippedStats.damage
     end
     return baseDamage
+end
+
+-- Learn a spell
+function Player:learnSpell(spellId)
+    if not self.knownSpells[spellId] then
+        self.knownSpells[spellId] = true
+        return true
+    end
+    return false
+end
+
+-- Cast a spell
+function Player:castSpell(spellId, enemies)
+    if not self.knownSpells[spellId] then
+        return false
+    end
+
+    local Spells = require("src.data.Spells")
+    local spellData = Spells.getSpell(spellId)
+
+    if not spellData then
+        return false
+    end
+
+    -- Check if already casting
+    if self.castingSpell then
+        return false
+    end
+
+    -- Start cast timer
+    self.castingSpell = spellId
+    self.castTimer = spellData.castTime or 0.5
+
+    -- For instant cast spells, cast immediately
+    if spellData.castTime <= 0 then
+        return self:executeSpell(spellId, enemies)
+    end
+
+    return true
+end
+
+-- Execute spell after cast time
+function Player:executeSpell(spellId, enemies)
+    local MagicSystem = require("src.combat.MagicSystem")
+    local Spells = require("src.data.Spells")
+    local spellData = Spells.getSpell(spellId)
+
+    if not spellData then
+        return false
+    end
+
+    -- Find target
+    local target = nil
+    if spellData.effect == "heal" or spellData.effect == "buff" then
+        -- Self-cast
+        target = self
+    elseif spellData.effect == "damage" then
+        -- Find nearest enemy
+        local playerCenterX = self.x + self.width / 2
+        local playerCenterY = self.y + self.height / 2
+        local nearestDist = spellData.range or 200
+        local nearestEnemy = nil
+
+        for _, enemy in ipairs(enemies or {}) do
+            if enemy.active then
+                local enemyCenterX = enemy.x + enemy.width / 2
+                local enemyCenterY = enemy.y + enemy.height / 2
+                local dx = enemyCenterX - playerCenterX
+                local dy = enemyCenterY - playerCenterY
+                local dist = math.sqrt(dx * dx + dy * dy)
+
+                if dist <= nearestDist then
+                    nearestDist = dist
+                    nearestEnemy = enemy
+                end
+            end
+        end
+        target = nearestEnemy
+    end
+
+    if not target then
+        return false
+    end
+
+    -- Cast spell through magic system
+    local success = MagicSystem.castSpell(spellId, self.stats, target)
+
+    if success and spellData.effect == "damage" and target.takeDamage then
+        -- Add magic damage bonus
+        local magicDamage = self.stats:getMagicDamage()
+        target:takeDamage(magicDamage)
+    end
+
+    return success
+end
+
+-- Get known spells
+function Player:getKnownSpells()
+    local Spells = require("src.data.Spells")
+    local known = {}
+    for spellId, _ in pairs(self.knownSpells) do
+        table.insert(known, {id = spellId, data = Spells.getSpell(spellId)})
+    end
+    return known
 end
 
 return Player

@@ -131,7 +131,25 @@ function Stats:unlockSkill(skillId, skillData)
     }
 
     self.skillPoints = self.skillPoints - 1
+
+    -- Apply skill effects
+    self:applySkillEffectsOnUnlock(skillId, skillData)
+
     return true
+end
+
+-- Apply skill effects when unlocked
+function Stats:applySkillEffectsOnUnlock(skillId, skillData)
+    if skillData.effects then
+        if skillData.effects.maxHealth then
+            self.maxHealth = self.maxHealth + skillData.effects.maxHealth
+            self.health = self.health + skillData.effects.maxHealth
+        end
+        if skillData.effects.maxMana then
+            self.maxMana = self.maxMana + skillData.effects.maxMana
+            self.mana = self.mana + skillData.effects.maxMana
+        end
+    end
 end
 
 function Stats:upgradeSkill(skillId)
@@ -150,6 +168,19 @@ function Stats:upgradeSkill(skillId)
 
     skill.level = skill.level + 1
     self.skillPoints = self.skillPoints - 1
+
+    -- Apply skill effects on upgrade
+    if skill.data and skill.data.effects then
+        if skill.data.effects.maxHealth then
+            self.maxHealth = self.maxHealth + skill.data.effects.maxHealth
+            self.health = self.health + skill.data.effects.maxHealth
+        end
+        if skill.data.effects.maxMana then
+            self.maxMana = self.maxMana + skill.data.effects.maxMana
+            self.mana = self.mana + skill.data.effects.maxMana
+        end
+    end
+
     return true
 end
 
@@ -165,23 +196,92 @@ function Stats:getSkillLevel(skillId)
 end
 
 function Stats:getDamage()
-    return self.strength * 2
+    local damage = self.strength * 2
+
+    -- Apply skill bonuses
+    if self.skills.combat_mastery then
+        local skill = self.skills.combat_mastery
+        if skill.data and skill.data.effects and skill.data.effects.damage then
+            damage = damage + (skill.data.effects.damage * skill.level)
+        end
+    end
+
+    return damage
 end
 
 function Stats:getDefense()
-    return self.vitality * 1.5
+    local defense = self.vitality * 1.5
+
+    -- Apply skill bonuses
+    if self.skills.defensive_stance then
+        local skill = self.skills.defensive_stance
+        if skill.data and skill.data.effects and skill.data.effects.defense then
+            defense = defense + (skill.data.effects.defense * skill.level)
+        end
+    end
+
+    return defense
 end
 
 function Stats:getMagicDamage()
-    return self.intelligence * 2
+    local magicDamage = self.intelligence * 2
+
+    -- Apply skill bonuses
+    if self.skills.spell_power then
+        local skill = self.skills.spell_power
+        if skill.data and skill.data.effects and skill.data.effects.magicDamage then
+            magicDamage = magicDamage + (skill.data.effects.magicDamage * skill.level)
+        end
+    end
+
+    return magicDamage
 end
 
 function Stats:getCriticalChance()
-    return self.dexterity * 0.5 + self.luck * 0.3
+    local critChance = self.dexterity * 0.5 + self.luck * 0.3
+
+    -- Apply skill bonuses
+    if self.skills.critical_strike then
+        local skill = self.skills.critical_strike
+        if skill.data and skill.data.effects and skill.data.effects.critChance then
+            critChance = critChance + (skill.data.effects.critChance * skill.level)
+        end
+    end
+
+    return critChance
 end
 
 function Stats:getCriticalDamage()
-    return 1.5 + self.dexterity * 0.01
+    local critDamage = 1.5 + self.dexterity * 0.01
+
+    -- Apply skill bonuses
+    if self.skills.critical_strike then
+        local skill = self.skills.critical_strike
+        if skill.data and skill.data.effects and skill.data.effects.critDamage then
+            critDamage = critDamage + (skill.data.effects.critDamage * skill.level)
+        end
+    end
+
+    return critDamage
+end
+
+-- Apply skill effects on level up
+function Stats:applySkillEffects()
+    -- Health boost
+    if self.skills.health_boost then
+        local skill = self.skills.health_boost
+        if skill.data and skill.data.effects and skill.data.effects.maxHealth then
+            -- This is applied when skill is unlocked/upgraded
+        end
+    end
+
+    -- Magic affinity
+    if self.skills.magic_affinity then
+        local skill = self.skills.magic_affinity
+        if skill.data and skill.data.effects and skill.data.effects.maxMana then
+            -- This is applied when skill is unlocked/upgraded
+        end
+    end
 end
 
 return Stats
