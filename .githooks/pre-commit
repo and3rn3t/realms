@@ -19,7 +19,7 @@ if [ -z "$STAGED_LUA_FILES" ]; then
     exit 0
 fi
 
-# Run luacheck on staged Lua files
+# Run luacheck on staged Lua files (matching CI configuration)
 echo "$STAGED_LUA_FILES" | xargs luacheck --no-color
 
 # If luacheck found issues, exit with error

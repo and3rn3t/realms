@@ -15,8 +15,9 @@ help:
 run:
 	love .
 
-# Lint the code
+# Lint the code (matches CI configuration)
 lint:
+	@echo "Running luacheck (matching CI configuration)..."
 	luacheck . --no-color
 
 # Build .love file for distribution

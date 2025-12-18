@@ -46,13 +46,31 @@ love .
 
 ### Linting
 
-Check your code for issues:
+Check your code for issues (matches CI configuration):
 
 ```bash
 make lint
 # or
-luacheck .
+luacheck . --no-color
 ```
+
+**Before pushing**, you can run the lint check script to ensure your local setup matches CI:
+
+**Linux/macOS:**
+```bash
+chmod +x scripts/check-lint.sh
+./scripts/check-lint.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\check-lint.ps1
+```
+
+This will verify that:
+- luacheck is installed
+- Configuration file exists
+- All files pass linting (same as CI)
 
 ### Pre-commit Hooks
 

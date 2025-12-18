@@ -125,11 +125,19 @@ This project uses:
 
 ### Linting
 
+Check your code for issues (matches CI configuration):
+
 ```bash
 make lint
 # or
-luacheck .
+luacheck . --no-color
 ```
+
+**Before pushing**, verify your setup matches CI:
+- **Linux/macOS:** `./scripts/check-lint.sh`
+- **Windows:** `.\scripts\check-lint.ps1`
+
+See [LINTING.md](LINTING.md) for detailed linting configuration.
 
 ### Building for Distribution
 
