@@ -34,7 +34,6 @@ function StatsUI:draw(stats)
 
     -- Title
     love.graphics.setColor(1, 1, 1)
-    local font = love.graphics.getFont()
     love.graphics.print("Character Stats", x + 20, y + 20)
 
     local textY = y + 60
@@ -82,7 +81,12 @@ function StatsUI:draw(stats)
     local statList = {
         {name = "Strength", value = stats.strength, key = "strength", description = "Increases physical damage"},
         {name = "Dexterity", value = stats.dexterity, key = "dexterity", description = "Increases critical chance"},
-        {name = "Intelligence", value = stats.intelligence, key = "intelligence", description = "Increases magic damage"},
+        {
+            name = "Intelligence",
+            value = stats.intelligence,
+            key = "intelligence",
+            description = "Increases magic damage"
+        },
         {name = "Vitality", value = stats.vitality, key = "vitality", description = "Increases max health"},
         {name = "Wisdom", value = stats.wisdom, key = "wisdom", description = "Increases max mana"},
         {name = "Luck", value = stats.luck, key = "luck", description = "Increases critical chance"},

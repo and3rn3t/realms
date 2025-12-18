@@ -36,7 +36,6 @@ function QuestLogUI:draw(questSystem)
 
     -- Title
     love.graphics.setColor(1, 1, 1)
-    local font = love.graphics.getFont()
     love.graphics.print("Quest Log", x + 20, y + 20)
 
     -- Tabs

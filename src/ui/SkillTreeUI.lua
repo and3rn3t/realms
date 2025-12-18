@@ -147,7 +147,10 @@ function SkillTreeUI:draw(stats)
         -- Skill level/status
         if skill.unlocked then
             love.graphics.setColor(0.3, 1, 0.3)
-            love.graphics.print(string.format("Lv %d/%d", skill.level, skill.data.maxLevel or 5), listX + 10, skillY + 20)
+            local levelText = string.format(
+                "Lv %d/%d", skill.level, skill.data.maxLevel or 5
+            )
+            love.graphics.print(levelText, listX + 10, skillY + 20)
         else
             love.graphics.setColor(0.6, 0.6, 0.6)
             love.graphics.print("Locked", listX + 10, skillY + 20)
@@ -185,7 +188,10 @@ function SkillTreeUI:draw(stats)
         -- Skill level info
         if skill.unlocked then
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(string.format("Level: %d / %d", skill.level, skill.data.maxLevel or 5), detailsX + 10, textY)
+            local levelText = string.format(
+                "Level: %d / %d", skill.level, skill.data.maxLevel or 5
+            )
+            love.graphics.print(levelText, detailsX + 10, textY)
             textY = textY + 25
         end
 

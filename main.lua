@@ -28,6 +28,14 @@ function love.load()
     src.world.World = require("src.world.World")
     src.world.World.init()
 
+    -- Initialize exploration system
+    src.world.Exploration = require("src.world.Exploration")
+    src.world.Exploration.init()
+
+    -- Initialize environment system
+    src.world.Environment = require("src.world.Environment")
+    src.world.Environment.init()
+
     -- Load realm data
     src.data = {}
     src.data.Realms = require("src.data.Realms")
@@ -188,6 +196,18 @@ function love.load()
             -- Load starting realm
             local realm = src.world.World.loadRealm("starting_realm")
             if realm then
+                -- Initialize exploration for realm
+                src.world.Exploration.initFogOfWar(realm, false)
+
+                -- Add some landmarks
+                src.world.Exploration.addLandmark("Starting Point", realm.name, 400, 300, "town")
+                src.world.Exploration.addLandmark("Ancient Ruins", realm.name, 800, 600, "dungeon")
+
+                -- Add a portal to forest realm
+                src.world.Exploration.addPortal(
+                    "Forest Portal", realm.name, 1000, 500, "forest_realm", 200, 200
+                )
+
                 -- Set up player collision
                 if realm:getCollisionWorld() then
                     self.player:setCollisionWorld(realm:getCollisionWorld())
@@ -197,6 +217,9 @@ function love.load()
                 src.core.Camera.setTarget(self.player)
                 local bx, by, bw, bh = realm:getBounds()
                 src.core.Camera.setBounds(bx, by, bw, bh)
+
+                -- Discover starting landmark
+                src.world.Exploration.discoverLandmark("Starting Point")
 
                 -- Add some NPCs to the world
                 local NPC = require("src.entities.NPC")
@@ -296,6 +319,17 @@ function love.load()
                 -- Update world
                 src.world.World.update(dt)
 
+                -- Update environment
+                src.world.Environment.update(dt)
+
+                -- Update exploration (reveal fog of war around player)
+                local currentRealm = src.world.World.getCurrentRealm()
+                if currentRealm and self.player then
+                    src.world.Exploration.revealArea(
+                        currentRealm, self.player.x, self.player.y, 100
+                    )
+                end
+
                 -- Update loot system
                 src.inventory.Loot.update(dt)
 
@@ -309,12 +343,15 @@ function love.load()
                     self.player:update(dt, src.core.Input)
 
                     -- Handle player attack
-                    if src.core.Input.wasPressed("attack") and not self.showDialogue and not self.showInventory and not self.showQuestLog and not self.showStats and not self.showCrafting then
+                    local canAct = not self.showDialogue and not self.showInventory
+                        and not self.showQuestLog and not self.showStats
+                        and not self.showCrafting
+                    if src.core.Input.wasPressed("attack") and canAct then
                         self.player:attack(self.enemies)
                     end
 
                     -- Handle spell casting (1-4 keys for quick spells)
-                    if not self.showDialogue and not self.showInventory and not self.showQuestLog and not self.showStats and not self.showCrafting then
+                    if canAct then
                         local knownSpells = self.player:getKnownSpells()
                         if src.core.Input.wasPressed("1") and knownSpells[1] then
                             self.player:castSpell(knownSpells[1].id, self.enemies)
@@ -376,6 +413,36 @@ function love.load()
                     if src.core.Input.wasPressed("k") and not self.showInventory and not self.showQuestLog and not self.showStats then
                         self.showSkillTree = not self.showSkillTree
                         self.skillTreeUI.visible = self.showSkillTree
+                    end
+
+                    -- Toggle minimap
+                    if src.core.Input.wasPressed("m") then
+                        self.showMinimap = not self.showMinimap
+                    end
+
+                    -- Check for portal interactions
+                    local currentRealm = src.world.World.getCurrentRealm()
+                    if currentRealm and self.player then
+                        local portal = src.world.Exploration.checkPortal(
+                            self.player, currentRealm
+                        )
+                        if portal and src.core.Input.wasPressed("interact") then
+                            -- Travel through portal
+                            local newRealm = src.world.World.loadRealm(portal.toRealm)
+                            if newRealm then
+                                self.player.x = portal.toX
+                                self.player.y = portal.toY
+                                if newRealm:getCollisionWorld() then
+                                    self.player:setCollisionWorld(
+                                        newRealm:getCollisionWorld()
+                                    )
+                                end
+                                local bx, by, bw, bh = newRealm:getBounds()
+                                src.core.Camera.setBounds(bx, by, bw, bh)
+                                src.world.Exploration.initFogOfWar(newRealm, false)
+                                print("Traveled to " .. newRealm.name)
+                            end
+                        end
                     end
                 end
 
@@ -456,6 +523,12 @@ function love.load()
             -- Draw world
             src.world.World.draw()
 
+            -- Draw fog of war
+            local currentRealm = src.world.World.getCurrentRealm()
+            if currentRealm then
+                src.world.Exploration.drawFogOfWar(currentRealm)
+            end
+
             -- Draw NPCs
             for _, npc in ipairs(self.npcs) do
                 npc:draw()
@@ -480,6 +553,29 @@ function love.load()
             end
 
             src.core.Camera.finish()
+
+            -- Apply environment lighting
+            src.world.Environment.applyLighting()
+
+            -- Draw weather effects
+            src.world.Environment.drawWeather()
+
+            -- Draw minimap
+            local currentRealm = src.world.World.getCurrentRealm()
+            if self.showMinimap and currentRealm and self.player then
+                src.world.Exploration.drawMinimap(currentRealm, self.player)
+            end
+
+            -- Apply environment lighting
+            src.world.Environment.applyLighting()
+
+            -- Draw weather effects
+            src.world.Environment.drawWeather()
+
+            -- Draw minimap
+            if self.showMinimap and currentRealm and self.player then
+                src.world.Exploration.drawMinimap(currentRealm, self.player)
+            end
 
             -- Draw UI
             if self.hud and self.player then
@@ -613,11 +709,16 @@ function love.load()
                 local health, maxHealth = self.player:getHealth()
                 love.graphics.print("Health: " .. math.floor(health) .. "/" .. maxHealth, 10, 25)
                 local knownSpells = self.player:getKnownSpells()
-                local spellText = "I: Inventory | Q: Quest Log | C: Stats | K: Skills | E: Interact | J/Z: Attack"
+                local spellText = "I: Inventory | Q: Quest Log | C: Stats | K: Skills | "
+                    .. "M: Minimap | E: Interact | J/Z: Attack"
                 if #knownSpells > 0 then
                     spellText = spellText .. " | 1-4: Spells"
                 end
                 love.graphics.print(spellText, 10, 40)
+
+                -- Show time of day
+                local timeOfDay = src.world.Environment.getTimeOfDay()
+                love.graphics.print("Time: " .. timeOfDay, 10, love.graphics.getHeight() - 20)
 
                 -- Show known spells with cooldowns
                 if #knownSpells > 0 then
