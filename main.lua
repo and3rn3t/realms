@@ -116,6 +116,7 @@ function love.load()
         showInventory = false,
         showDialogue = false,
         showCrafting = false,
+        showQuestLog = false,
         enter = function(self)
             print("Entered game state")
 
@@ -139,6 +140,18 @@ function love.load()
             self.inventoryUI = InventoryUI.new()
             self.inventoryUI.visible = false
             src.ui.UIManager.addElement("inventory", self.inventoryUI)
+
+            -- Initialize Quest Log UI
+            local QuestLogUI = require("src.ui.QuestLogUI")
+            self.questLogUI = QuestLogUI.new()
+            self.questLogUI.visible = false
+            src.ui.UIManager.addElement("questlog", self.questLogUI)
+
+            -- Initialize Crafting UI
+            local CraftingUI = require("src.ui.CraftingUI")
+            self.craftingUI = CraftingUI.new()
+            self.craftingUI.visible = false
+            src.ui.UIManager.addElement("crafting", self.craftingUI)
 
             -- Load starting realm
             local realm = src.world.World.loadRealm("starting_realm")
@@ -255,6 +268,7 @@ function love.load()
                         if not self.showDialogue then
                             for _, station in ipairs(self.craftingStations) do
                                 if station:canPlayerInteract(self.player) then
+                                    self.craftingUI:open(station, src.crafting.CraftingSystem)
                                     self.showCrafting = true
                                     break
                                 end
@@ -266,6 +280,12 @@ function love.load()
                     if src.core.Input.wasPressed("inventory") then
                         self.showInventory = not self.showInventory
                         self.inventoryUI.visible = self.showInventory
+                    end
+
+                    -- Toggle quest log
+                    if src.core.Input.wasPressed("q") and not self.showInventory then
+                        self.showQuestLog = not self.showQuestLog
+                        self.questLogUI.visible = self.showQuestLog
                     end
                 end
 
@@ -366,6 +386,14 @@ function love.load()
                 self.inventoryUI:draw(self.player.inventory)
             end
 
+            if self.questLogUI and self.showQuestLog then
+                self.questLogUI:draw(src.quests.QuestSystem)
+            end
+
+            if self.craftingUI and self.showCrafting and self.player then
+                self.craftingUI:draw(self.player.inventory)
+            end
+
             -- Draw dialogue
             if self.showDialogue and src.dialogue.DialogueSystem.isActive() then
                 local text = src.dialogue.DialogueSystem.getCurrentText()
@@ -410,14 +438,30 @@ function love.load()
             if self.player then
                 local health, maxHealth = self.player:getHealth()
                 love.graphics.print("Health: " .. math.floor(health) .. "/" .. maxHealth, 10, 25)
-                love.graphics.print("Press I for Inventory, E to Interact", 10, 40)
+                love.graphics.print("I: Inventory | Q: Quest Log | E: Interact", 10, 40)
             end
 
             src.core.Resolution.finish()
         end,
         keypressed = function(self, key)
             if key == "escape" then
-                src.core.StateManager.switch("menu")
+                -- Close any open UIs first
+                if self.showInventory then
+                    self.showInventory = false
+                    self.inventoryUI.visible = false
+                elseif self.showQuestLog then
+                    self.showQuestLog = false
+                    self.questLogUI.visible = false
+                else
+                    src.core.StateManager.switch("menu")
+                end
+            elseif self.questLogUI and self.showQuestLog then
+                self.questLogUI:keypressed(key)
+            elseif self.craftingUI and self.showCrafting and self.player then
+                self.craftingUI:keypressed(key, self.player.inventory)
+                if not self.craftingUI.visible then
+                    self.showCrafting = false
+                end
             end
         end
     }

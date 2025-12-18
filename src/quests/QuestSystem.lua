@@ -156,5 +156,10 @@ function QuestSystem.getQuest(questId)
     return QuestSystem.quests[questId]
 end
 
+-- Get completed quests
+function QuestSystem.getCompletedQuests()
+    return QuestSystem.completedQuests
+end
+
 return QuestSystem
 
