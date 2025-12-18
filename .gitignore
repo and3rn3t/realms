@@ -5,6 +5,8 @@ luac.out
 *.src.rock
 *.zip
 *.tar.gz
+.luarocks/
+lua_modules/
 
 # Object files
 *.o
@@ -39,3 +41,19 @@ luac.out
 *.x86_64
 *.hex
 
+# LÖVE2D
+*.love
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
