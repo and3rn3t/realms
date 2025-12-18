@@ -25,6 +25,10 @@ Input.keybinds = {
     inventory = {"i", "tab"},
     menu = {"escape", "m"},
     run = {"lshift", "rshift"},
+    f1 = {"f1"},
+    f2 = {"f2"},
+    f3 = {"f3"},
+    f4 = {"f4"},
     f5 = {"f5"},
     f9 = {"f9"},
 }

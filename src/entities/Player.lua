@@ -48,6 +48,10 @@ function Player.new(x, y)
     self.castingSpell = nil -- Spell being cast
     self.castTimer = 0
 
+    -- Item usage properties
+    self.quickItems = {nil, nil, nil, nil} -- F1-F4 quick item slots
+    self.itemCooldowns = {} -- Cooldown timers for items
+
     return self
 end
 
@@ -155,6 +159,14 @@ function Player:update(dt, input)
         self.castTimer = self.castTimer - dt
         if self.castTimer <= 0 then
             self.castingSpell = nil
+        end
+    end
+
+    -- Update item cooldowns
+    for itemId, cooldown in pairs(self.itemCooldowns) do
+        self.itemCooldowns[itemId] = math.max(0, cooldown - dt)
+        if self.itemCooldowns[itemId] <= 0 then
+            self.itemCooldowns[itemId] = nil
         end
     end
 
@@ -461,6 +473,55 @@ function Player:getKnownSpells()
         table.insert(known, {id = spellId, data = Spells.getSpell(spellId)})
     end
     return known
+end
+
+-- Use item from inventory
+function Player:useItem(itemId)
+    if not self.inventory then
+        return false
+    end
+
+    -- Check cooldown
+    if self.itemCooldowns[itemId] and self.itemCooldowns[itemId] > 0 then
+        return false
+    end
+
+    -- Use item
+    local success = self.inventory:useItem(itemId, self)
+
+    if success then
+        -- Set cooldown (2 seconds for consumables)
+        self.itemCooldowns[itemId] = 2.0
+        return true
+    end
+
+    return false
+end
+
+-- Set quick item slot
+function Player:setQuickItem(slot, itemId)
+    if slot >= 1 and slot <= 4 then
+        self.quickItems[slot] = itemId
+        return true
+    end
+    return false
+end
+
+-- Get quick item slot
+function Player:getQuickItem(slot)
+    if slot >= 1 and slot <= 4 then
+        return self.quickItems[slot]
+    end
+    return nil
+end
+
+-- Use quick item
+function Player:useQuickItem(slot)
+    local itemId = self:getQuickItem(slot)
+    if itemId then
+        return self:useItem(itemId)
+    end
+    return false
 end
 
 return Player
