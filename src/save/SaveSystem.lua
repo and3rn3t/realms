@@ -17,7 +17,7 @@ function SaveSystem.save(slot, gameState)
         timestamp = os.time(),
         data = gameState,
     }
-    
+
     -- Try to use bitser if available
     local success, bitser = pcall(require, "libs.bitser")
     if success and bitser then
@@ -40,7 +40,7 @@ function SaveSystem.load(slot)
             return SaveSystem.saveData[slot]
         end
     end
-    
+
     -- Fallback: memory
     return SaveSystem.saveData[slot]
 end

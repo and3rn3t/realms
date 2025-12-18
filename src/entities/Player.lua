@@ -127,7 +127,7 @@ function Player:update(dt, input)
 
     -- Handle collision if bump.lua is available
     if self.collisionWorld then
-        local actualX, actualY, cols, len = self.collisionWorld:move(
+        local actualX, actualY = self.collisionWorld:move(
             self,
             self.x + self.vx * dt,
             self.y + self.vy * dt,
@@ -158,7 +158,18 @@ function Player:draw()
             self.animation:draw(self.sprite, self.x, self.y, 0, scaleX, 1, self.width / 2, self.height / 2)
         else
             -- Simple sprite draw
-            love.graphics.draw(self.sprite, self.x + self.width / 2, self.y + self.height / 2, 0, scaleX, 1, self.sprite:getWidth() / 2, self.sprite:getHeight() / 2)
+            local spriteW = self.sprite:getWidth()
+            local spriteH = self.sprite:getHeight()
+            love.graphics.draw(
+                self.sprite,
+                self.x + self.width / 2,
+                self.y + self.height / 2,
+                0,
+                scaleX,
+                1,
+                spriteW / 2,
+                spriteH / 2
+            )
         end
     else
         -- Placeholder rectangle

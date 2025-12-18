@@ -95,10 +95,13 @@ end
 function DialogueSystem.executeAction(action)
     if action.type == "quest" then
         -- Start/complete quest
+        -- TODO: Implement quest action
     elseif action.type == "give_item" then
         -- Give item to player
+        -- TODO: Implement give item action
     elseif action.type == "take_item" then
         -- Take item from player
+        -- TODO: Implement take item action
     end
 end
 

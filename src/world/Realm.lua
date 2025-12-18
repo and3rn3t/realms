@@ -80,14 +80,18 @@ function Realm:setupCollision()
 
     -- Top and bottom walls
     for x = 1, tilesWide do
-        self.collisionWorld:add({type = "wall"}, (x - 1) * self.tileSize, 0, self.tileSize, self.tileSize)
-        self.collisionWorld:add({type = "wall"}, (x - 1) * self.tileSize, (tilesHigh - 1) * self.tileSize, self.tileSize, self.tileSize)
+        local wallX = (x - 1) * self.tileSize
+        self.collisionWorld:add({type = "wall"}, wallX, 0, self.tileSize, self.tileSize)
+        local bottomY = (tilesHigh - 1) * self.tileSize
+        self.collisionWorld:add({type = "wall"}, wallX, bottomY, self.tileSize, self.tileSize)
     end
 
     -- Left and right walls
     for y = 1, tilesHigh do
-        self.collisionWorld:add({type = "wall"}, 0, (y - 1) * self.tileSize, self.tileSize, self.tileSize)
-        self.collisionWorld:add({type = "wall"}, (tilesWide - 1) * self.tileSize, (y - 1) * self.tileSize, self.tileSize, self.tileSize)
+        local wallY = (y - 1) * self.tileSize
+        self.collisionWorld:add({type = "wall"}, 0, wallY, self.tileSize, self.tileSize)
+        local rightX = (tilesWide - 1) * self.tileSize
+        self.collisionWorld:add({type = "wall"}, rightX, wallY, self.tileSize, self.tileSize)
     end
 end
 

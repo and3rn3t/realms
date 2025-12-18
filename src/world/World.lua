@@ -61,7 +61,6 @@ end
 
 -- Switch to a different realm
 function World.switchRealm(name, player)
-    local oldRealm = World.currentRealm
     local newRealm = World.loadRealm(name)
 
     if newRealm and player then

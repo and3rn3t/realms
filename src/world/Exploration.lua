@@ -85,7 +85,7 @@ function Exploration.isRevealed(realm, x, y)
     local gridX = math.floor(x / gridSize) + 1
     local gridY = math.floor(y / gridSize) + 1
 
-    if Exploration.fogOfWar[key].revealed[ty] and Exploration.fogOfWar[key].revealed[ty][tx] then
+    if Exploration.fogOfWar[key].revealed[gridY] and Exploration.fogOfWar[key].revealed[gridY][gridX] then
         return true
     end
     return false

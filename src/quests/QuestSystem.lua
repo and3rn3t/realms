@@ -108,11 +108,13 @@ function QuestSystem.completeQuest(questId)
         -- Give experience
         if quest.rewards.experience then
             -- Would need player reference
+            -- TODO: Implement experience reward
         end
 
         -- Give items
         if quest.rewards.items then
             -- Would need inventory reference
+            -- TODO: Implement item rewards
         end
     end
 

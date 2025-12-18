@@ -159,10 +159,10 @@ function Inventory:useItem(itemId, target)
 
     -- Apply effect
     if itemData.effect == "heal" and target then
-        local current, max = target:getHealth()
+        local current = target:getHealth()
         target:setHealth(current + (itemData.amount or 0))
     elseif itemData.effect == "mana" and target then
-        local current, max = target:getMana()
+        local current = target:getMana()
         target:setMana(current + (itemData.amount or 0))
     end
 
