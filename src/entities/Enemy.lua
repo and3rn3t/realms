@@ -15,6 +15,7 @@ function Enemy.new(x, y, enemyType)
     self.health = 50
     self.maxHealth = 50
     self.damage = 10
+    self.defense = 0
     self.speed = 80
     self.aggroRange = 150
     self.attackRange = 40
@@ -81,6 +82,20 @@ end
 
 function Enemy:die()
     self.active = false
+
+    -- Update quest progress for enemy kills
+    local QuestSystem = require("src.quests.QuestSystem")
+    local activeQuests = QuestSystem.getActiveQuests()
+    for _, questId in ipairs(activeQuests) do
+        local quest = QuestSystem.getQuest(questId)
+        if quest and quest.objectives then
+            for _, objective in ipairs(quest.objectives) do
+                if objective.type == "kill" then
+                    QuestSystem.updateProgress(questId, objective.id, 1)
+                end
+            end
+        end
+    end
 
     -- Drop loot
     local Loot = require("src.inventory.Loot")

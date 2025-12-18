@@ -34,6 +34,14 @@ function Player.new(x, y)
     self.stats = Stats.new()
     self.inventory = nil -- Will be set up separately
 
+    -- Combat properties
+    self.attackRange = 50
+    self.attackCooldown = 0
+    self.attackDelay = 0.5
+    self.isAttacking = false
+    self.attackDuration = 0.2
+    self.attackTimer = 0
+
     return self
 end
 
@@ -125,6 +133,17 @@ function Player:update(dt, input)
         self.animation:update(dt)
     end
 
+    -- Update attack cooldown
+    self.attackCooldown = math.max(0, self.attackCooldown - dt)
+
+    -- Update attack animation
+    if self.isAttacking then
+        self.attackTimer = self.attackTimer - dt
+        if self.attackTimer <= 0 then
+            self.isAttacking = false
+        end
+    end
+
     -- Handle collision if bump.lua is available
     if self.collisionWorld then
         local actualX, actualY = self.collisionWorld:move(
@@ -143,6 +162,25 @@ end
 
 function Player:draw()
     if not self.visible then return end
+
+    -- Draw attack indicator
+    if self.isAttacking then
+        local centerX = self.x + self.width / 2
+        local centerY = self.y + self.height / 2
+        local attackRadius = self.attackRange
+
+        -- Draw attack arc based on facing direction
+        love.graphics.setColor(1, 1, 0, 0.3)
+        if self.facing == "up" then
+            love.graphics.arc("fill", centerX, centerY, attackRadius, math.pi, 0)
+        elseif self.facing == "down" then
+            love.graphics.arc("fill", centerX, centerY, attackRadius, 0, math.pi)
+        elseif self.facing == "left" then
+            love.graphics.arc("fill", centerX, centerY, attackRadius, math.pi / 2, 3 * math.pi / 2)
+        elseif self.facing == "right" then
+            love.graphics.arc("fill", centerX, centerY, attackRadius, 3 * math.pi / 2, math.pi / 2)
+        end
+    end
 
     love.graphics.setColor(1, 1, 1)
 
@@ -202,6 +240,93 @@ end
 
 function Player:takeDamage(amount)
     self.stats:setHealth(self.stats.health - amount)
+end
+
+-- Attack nearby enemies
+function Player:attack(enemies)
+    if self.attackCooldown > 0 or self.isAttacking then
+        return false
+    end
+
+    if not enemies or #enemies == 0 then
+        return false
+    end
+
+    -- Set attack cooldown and animation
+    self.attackCooldown = self.attackDelay
+    self.isAttacking = true
+    self.attackTimer = self.attackDuration
+
+    -- Calculate base damage from stats
+    local baseDamage = self.stats:getDamage()
+
+    -- Add weapon damage if equipped
+    if self.inventory then
+        local equippedStats = self.inventory:getEquippedStats()
+        baseDamage = baseDamage + equippedStats.damage
+    end
+
+    -- Find enemies in attack range
+    local hitEnemies = {}
+    local playerCenterX = self.x + self.width / 2
+    local playerCenterY = self.y + self.height / 2
+
+    for _, enemy in ipairs(enemies) do
+        if enemy.active then
+            local enemyCenterX = enemy.x + enemy.width / 2
+            local enemyCenterY = enemy.y + enemy.height / 2
+            local dx = enemyCenterX - playerCenterX
+            local dy = enemyCenterY - playerCenterY
+            local dist = math.sqrt(dx * dx + dy * dy)
+
+            -- Check if enemy is in range and in attack direction
+            if dist <= self.attackRange then
+                -- Check if enemy is in the direction player is facing
+                local inDirection = false
+                if self.facing == "up" and dy < 0 and math.abs(dx) < math.abs(dy) then
+                    inDirection = true
+                elseif self.facing == "down" and dy > 0 and math.abs(dx) < math.abs(dy) then
+                    inDirection = true
+                elseif self.facing == "left" and dx < 0 and math.abs(dy) < math.abs(dx) then
+                    inDirection = true
+                elseif self.facing == "right" and dx > 0 and math.abs(dy) < math.abs(dx) then
+                    inDirection = true
+                end
+
+                if inDirection then
+                    table.insert(hitEnemies, enemy)
+                end
+            end
+        end
+    end
+
+    -- Deal damage to hit enemies
+    local CombatSystem = require("src.combat.CombatSystem")
+    for _, enemy in ipairs(hitEnemies) do
+        -- Calculate damage with combat system
+        local attacker = {
+            damage = baseDamage,
+            critChance = self.stats:getCriticalChance() / 100,
+            critDamage = self.stats:getCriticalDamage(),
+        }
+        local defender = {
+            defense = enemy.defense or 0,
+        }
+        local damage = CombatSystem.calculateDamage(attacker, defender)
+        enemy:takeDamage(damage)
+    end
+
+    return #hitEnemies > 0
+end
+
+-- Get attack damage (for UI display)
+function Player:getAttackDamage()
+    local baseDamage = self.stats:getDamage()
+    if self.inventory then
+        local equippedStats = self.inventory:getEquippedStats()
+        baseDamage = baseDamage + equippedStats.damage
+    end
+    return baseDamage
 end
 
 return Player

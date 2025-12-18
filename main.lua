@@ -117,6 +117,7 @@ function love.load()
         showDialogue = false,
         showCrafting = false,
         showQuestLog = false,
+        showStats = false,
         enter = function(self)
             print("Entered game state")
 
@@ -152,6 +153,12 @@ function love.load()
             self.craftingUI = CraftingUI.new()
             self.craftingUI.visible = false
             src.ui.UIManager.addElement("crafting", self.craftingUI)
+
+            -- Initialize Stats UI
+            local StatsUI = require("src.ui.StatsUI")
+            self.statsUI = StatsUI.new()
+            self.statsUI.visible = false
+            src.ui.UIManager.addElement("stats", self.statsUI)
 
             -- Load starting realm
             local realm = src.world.World.loadRealm("starting_realm")
@@ -237,10 +244,24 @@ function love.load()
             -- Handle dialogue
             if src.dialogue.DialogueSystem.isActive() then
                 -- Dialogue input handling
-                if src.core.Input.wasPressed("interact") or src.core.Input.wasPressed("return") then
-                    local choices = src.dialogue.DialogueSystem.getCurrentChoices()
+                local choices = src.dialogue.DialogueSystem.getCurrentChoices()
+
+                -- Arrow key navigation for choices
+                if #choices > 0 then
+                    if src.core.Input.wasPressed("up") then
+                        local current = src.dialogue.DialogueSystem.getSelectedChoice()
+                        src.dialogue.DialogueSystem.setSelectedChoice(current - 1)
+                    elseif src.core.Input.wasPressed("down") then
+                        local current = src.dialogue.DialogueSystem.getSelectedChoice()
+                        src.dialogue.DialogueSystem.setSelectedChoice(current + 1)
+                    end
+                end
+
+                -- Select choice or continue
+                if src.core.Input.wasPressed("interact") or src.core.Input.wasPressed("return") or src.core.Input.wasPressed("kpenter") then
                     if #choices > 0 then
-                        src.dialogue.DialogueSystem.selectChoice(1)
+                        local selected = src.dialogue.DialogueSystem.getSelectedChoice()
+                        src.dialogue.DialogueSystem.selectChoice(selected)
                     else
                         src.dialogue.DialogueSystem.endDialogue()
                         self.showDialogue = false
@@ -253,6 +274,11 @@ function love.load()
                 -- Update player
                 if self.player then
                     self.player:update(dt, src.core.Input)
+
+                    -- Handle player attack
+                    if src.core.Input.wasPressed("attack") and not self.showDialogue and not self.showInventory and not self.showQuestLog and not self.showStats and not self.showCrafting then
+                        self.player:attack(self.enemies)
+                    end
 
                     -- Check for NPC interactions
                     if src.core.Input.wasPressed("interact") then
@@ -286,6 +312,12 @@ function love.load()
                     if src.core.Input.wasPressed("q") and not self.showInventory then
                         self.showQuestLog = not self.showQuestLog
                         self.questLogUI.visible = self.showQuestLog
+                    end
+
+                    -- Toggle stats
+                    if src.core.Input.wasPressed("c") and not self.showInventory and not self.showQuestLog then
+                        self.showStats = not self.showStats
+                        self.statsUI.visible = self.showStats
                     end
                 end
 
@@ -394,37 +426,103 @@ function love.load()
                 self.craftingUI:draw(self.player.inventory)
             end
 
+            if self.statsUI and self.showStats and self.player then
+                self.statsUI:draw(self.player.stats)
+            end
+
             -- Draw dialogue
             if self.showDialogue and src.dialogue.DialogueSystem.isActive() then
                 local text = src.dialogue.DialogueSystem.getCurrentText()
                 local choices = src.dialogue.DialogueSystem.getCurrentChoices()
+                local selectedChoice = src.dialogue.DialogueSystem.getSelectedChoice()
+                local npc = src.dialogue.DialogueSystem.currentNPC
 
                 if text then
                     local font = src.core.AssetManager.getDefaultFont(14)
                     love.graphics.setFont(font)
 
-                    -- Dialogue box
-                    local boxWidth = 600
-                    local boxHeight = 150
+                    -- Calculate box size based on content
+                    local boxWidth = 700
+                    local textHeight = 60
+                    local choiceHeight = #choices > 0 and (#choices * 30 + 20) or 0
+                    local boxHeight = textHeight + choiceHeight + 40
                     local boxX = (love.graphics.getWidth() - boxWidth) / 2
-                    local boxY = love.graphics.getHeight() - boxHeight - 20
+                    local boxY = love.graphics.getHeight() - boxHeight - 30
 
-                    love.graphics.setColor(0, 0, 0, 0.8)
+                    -- Dialogue box background with border
+                    love.graphics.setColor(0.05, 0.05, 0.1, 0.95)
                     love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight)
-                    love.graphics.setColor(1, 1, 1)
+                    love.graphics.setColor(0.4, 0.6, 1)
+                    love.graphics.setLineWidth(3)
                     love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight)
+                    love.graphics.setLineWidth(1)
 
-                    -- Dialogue text
+                    -- NPC name (if available)
+                    local textY = boxY + 15
+                    if npc and npc.name then
+                        love.graphics.setColor(1, 1, 0.5)
+                        love.graphics.print(npc.name, boxX + 15, textY)
+                        textY = textY + 25
+                    end
+
+                    -- Dialogue text with word wrapping
                     love.graphics.setColor(1, 1, 1)
-                    love.graphics.print(text, boxX + 10, boxY + 10)
+                    local textX = boxX + 15
+                    local maxWidth = boxWidth - 30
+                    local lines = {}
+                    local words = {}
+                    for word in text:gmatch("%S+") do
+                        table.insert(words, word)
+                    end
 
-                    -- Choices
-                    if #choices > 0 then
-                        for i, choice in ipairs(choices) do
-                            local prefix = (i == 1 and "> " or "  ")
-                            local yPos = boxY + 50 + (i - 1) * 20
-                            love.graphics.print(prefix .. choice.text, boxX + 10, yPos)
+                    local currentLine = ""
+                    for _, word in ipairs(words) do
+                        local testLine = currentLine == "" and word or currentLine .. " " .. word
+                        local width = font:getWidth(testLine)
+                        if width > maxWidth and currentLine ~= "" then
+                            table.insert(lines, currentLine)
+                            currentLine = word
+                        else
+                            currentLine = testLine
                         end
+                    end
+                    if currentLine ~= "" then
+                        table.insert(lines, currentLine)
+                    end
+
+                    for i, line in ipairs(lines) do
+                        love.graphics.print(line, textX, textY)
+                        textY = textY + 20
+                    end
+
+                    -- Choices with selection indicator
+                    if #choices > 0 then
+                        textY = textY + 10
+                        love.graphics.setColor(0.3, 0.3, 0.3)
+                        love.graphics.rectangle("fill", boxX + 10, textY, boxWidth - 20, choiceHeight - 10)
+
+                        for i, choice in ipairs(choices) do
+                            local choiceY = textY + 10 + (i - 1) * 30
+
+                            if i == selectedChoice then
+                                -- Highlight selected choice
+                                love.graphics.setColor(0.2, 0.4, 0.8, 0.5)
+                                love.graphics.rectangle("fill", boxX + 15, choiceY - 2, boxWidth - 30, 28)
+                                love.graphics.setColor(1, 1, 0.5)
+                                love.graphics.print("> " .. choice.text, boxX + 25, choiceY + 5)
+                            else
+                                love.graphics.setColor(0.8, 0.8, 0.8)
+                                love.graphics.print("  " .. choice.text, boxX + 25, choiceY + 5)
+                            end
+                        end
+
+                        -- Navigation hint
+                        love.graphics.setColor(0.6, 0.6, 0.6)
+                        love.graphics.print("↑↓ to select, ENTER to choose", boxX + 15, boxY + boxHeight - 20)
+                    else
+                        -- Continue hint
+                        love.graphics.setColor(0.6, 0.6, 0.6)
+                        love.graphics.print("Press ENTER to continue", boxX + 15, boxY + boxHeight - 20)
                     end
                 end
             end
@@ -438,7 +536,7 @@ function love.load()
             if self.player then
                 local health, maxHealth = self.player:getHealth()
                 love.graphics.print("Health: " .. math.floor(health) .. "/" .. maxHealth, 10, 25)
-                love.graphics.print("I: Inventory | Q: Quest Log | E: Interact", 10, 40)
+                love.graphics.print("I: Inventory | Q: Quest Log | C: Stats | E: Interact | J/Z: Attack", 10, 40)
             end
 
             src.core.Resolution.finish()
@@ -452,6 +550,12 @@ function love.load()
                 elseif self.showQuestLog then
                     self.showQuestLog = false
                     self.questLogUI.visible = false
+                elseif self.showStats then
+                    self.showStats = false
+                    self.statsUI.visible = false
+                elseif self.showCrafting then
+                    self.showCrafting = false
+                    self.craftingUI:close()
                 else
                     src.core.StateManager.switch("menu")
                 end
@@ -461,6 +565,11 @@ function love.load()
                 self.craftingUI:keypressed(key, self.player.inventory)
                 if not self.craftingUI.visible then
                     self.showCrafting = false
+                end
+            elseif self.statsUI and self.showStats and self.player then
+                self.statsUI:keypressed(key, self.player.stats)
+                if not self.statsUI.visible then
+                    self.showStats = false
                 end
             end
         end

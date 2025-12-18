@@ -37,7 +37,7 @@ Quests.data = {
         name = "Gather Materials",
         description = "Collect 10 iron ore for the blacksmith",
         objectives = {
-            {id = "collect_ore", type = "collect", target = 10, description = "Collect 10 iron ore"},
+            {id = "collect_ore", type = "collect", itemId = "iron_ore", target = 10, description = "Collect 10 iron ore"},
         },
         rewards = {
             experience = 150,

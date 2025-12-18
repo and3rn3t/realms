@@ -28,6 +28,21 @@ function Inventory:addItem(itemId, quantity)
         if slot.id == itemId and slot.quantity < (slot.maxStack or 1) then
             local canAdd = math.min(quantity, (slot.maxStack or 1) - slot.quantity)
             slot.quantity = slot.quantity + canAdd
+
+            -- Update quest progress for item collection
+            local QuestSystem = require("src.quests.QuestSystem")
+            local activeQuests = QuestSystem.getActiveQuests()
+            for _, questId in ipairs(activeQuests) do
+                local quest = QuestSystem.getQuest(questId)
+                if quest and quest.objectives then
+                    for _, objective in ipairs(quest.objectives) do
+                        if objective.type == "collect" and objective.itemId == itemId then
+                            QuestSystem.updateProgress(questId, objective.id, canAdd)
+                        end
+                    end
+                end
+            end
+
             quantity = quantity - canAdd
             if quantity <= 0 then
                 return true
@@ -51,6 +66,20 @@ function Inventory:addItem(itemId, quantity)
         quantity = quantity,
         maxStack = itemData.stackable and (itemData.maxStack or 99) or 1,
     })
+
+    -- Update quest progress for item collection
+    local QuestSystem = require("src.quests.QuestSystem")
+    local activeQuests = QuestSystem.getActiveQuests()
+    for _, questId in ipairs(activeQuests) do
+        local quest = QuestSystem.getQuest(questId)
+        if quest and quest.objectives then
+            for _, objective in ipairs(quest.objectives) do
+                if objective.type == "collect" and objective.itemId == itemId then
+                    QuestSystem.updateProgress(questId, objective.id, quantity)
+                end
+            end
+        end
+    end
 
     return true
 end

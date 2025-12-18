@@ -6,7 +6,9 @@
 local DialogueSystem = {}
 DialogueSystem.currentDialogue = nil
 DialogueSystem.currentNode = nil
+DialogueSystem.currentNPC = nil
 DialogueSystem.history = {}
+DialogueSystem.selectedChoice = 1
 
 -- Initialize dialogue system
 function DialogueSystem.init()
@@ -20,6 +22,7 @@ function DialogueSystem.start(dialogue, npc)
     DialogueSystem.currentDialogue = dialogue
     DialogueSystem.currentNode = dialogue.start or dialogue.nodes[1]
     DialogueSystem.currentNPC = npc
+    DialogueSystem.selectedChoice = 1
 end
 
 -- Get current dialogue text
@@ -60,7 +63,12 @@ function DialogueSystem.selectChoice(index)
         return
     end
 
-    local choice = DialogueSystem.currentNode.choices[index]
+    local choices = DialogueSystem.getCurrentChoices()
+    if index < 1 or index > #choices then
+        return
+    end
+
+    local choice = choices[index]
     if not choice then
         return
     end
@@ -73,9 +81,21 @@ function DialogueSystem.selectChoice(index)
     -- Move to next node
     if choice.next then
         DialogueSystem.currentNode = DialogueSystem.findNode(choice.next)
+        DialogueSystem.selectedChoice = 1
     else
         DialogueSystem.endDialogue()
     end
+end
+
+-- Get selected choice index
+function DialogueSystem.getSelectedChoice()
+    return DialogueSystem.selectedChoice
+end
+
+-- Set selected choice index
+function DialogueSystem.setSelectedChoice(index)
+    local choices = DialogueSystem.getCurrentChoices()
+    DialogueSystem.selectedChoice = math.max(1, math.min(#choices, index))
 end
 
 -- Set player reference for actions
@@ -154,6 +174,7 @@ function DialogueSystem.endDialogue()
     DialogueSystem.currentDialogue = nil
     DialogueSystem.currentNode = nil
     DialogueSystem.currentNPC = nil
+    DialogueSystem.selectedChoice = 1
 end
 
 -- Is dialogue active
