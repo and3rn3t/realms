@@ -306,7 +306,10 @@ function love.load()
                 end
 
                 -- Select choice or continue
-                if src.core.Input.wasPressed("interact") or src.core.Input.wasPressed("return") or src.core.Input.wasPressed("kpenter") then
+                local interactPressed = src.core.Input.wasPressed("interact")
+                    or src.core.Input.wasPressed("return")
+                    or src.core.Input.wasPressed("kpenter")
+                if interactPressed then
                     if #choices > 0 then
                         local selected = src.dialogue.DialogueSystem.getSelectedChoice()
                         src.dialogue.DialogueSystem.selectChoice(selected)
@@ -410,7 +413,9 @@ function love.load()
                     end
 
                     -- Toggle skill tree
-                    if src.core.Input.wasPressed("k") and not self.showInventory and not self.showQuestLog and not self.showStats then
+                    local canOpenSkillTree = not self.showInventory
+                        and not self.showQuestLog and not self.showStats
+                    if src.core.Input.wasPressed("k") and canOpenSkillTree then
                         self.showSkillTree = not self.showSkillTree
                         self.skillTreeUI.visible = self.showSkillTree
                     end
@@ -421,7 +426,6 @@ function love.load()
                     end
 
                     -- Check for portal interactions
-                    local currentRealm = src.world.World.getCurrentRealm()
                     if currentRealm and self.player then
                         local portal = src.world.Exploration.checkPortal(
                             self.player, currentRealm
@@ -561,7 +565,6 @@ function love.load()
             src.world.Environment.drawWeather()
 
             -- Draw minimap
-            local currentRealm = src.world.World.getCurrentRealm()
             if self.showMinimap and currentRealm and self.player then
                 src.world.Exploration.drawMinimap(currentRealm, self.player)
             end
