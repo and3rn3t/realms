@@ -393,7 +393,9 @@ function love.load()
                     -- Choices
                     if #choices > 0 then
                         for i, choice in ipairs(choices) do
-                            love.graphics.print((i == 1 and "> " or "  ") .. choice.text, boxX + 10, boxY + 50 + (i - 1) * 20)
+                            local prefix = (i == 1 and "> " or "  ")
+                            local yPos = boxY + 50 + (i - 1) * 20
+                            love.graphics.print(prefix .. choice.text, boxX + 10, yPos)
                         end
                     end
                 end

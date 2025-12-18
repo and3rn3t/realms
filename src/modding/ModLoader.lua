@@ -134,11 +134,9 @@ function ModLoader.loadAllMods()
         return
     end
 
-    -- Check for mods directory
-    local modsDir = "mods"
-
     -- In LÖVE2D, we'd use love.filesystem.getDirectoryItems
     -- For now, this is a framework that can be expanded
+    -- Mods can be loaded manually using ModLoader.loadMod()
     print("Mod loader ready - mods can be loaded from 'mods' directory")
 end
 
