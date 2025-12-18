@@ -83,6 +83,11 @@ function QuestSystem.updateProgress(questId, objectiveId, amount)
     return true
 end
 
+-- Set player reference for rewards
+function QuestSystem.setPlayer(player)
+    QuestSystem.player = player
+end
+
 -- Complete a quest
 function QuestSystem.completeQuest(questId)
     if not QuestSystem.isActive(questId) then
@@ -106,15 +111,15 @@ function QuestSystem.completeQuest(questId)
     -- Give rewards
     if quest.rewards then
         -- Give experience
-        if quest.rewards.experience then
-            -- Would need player reference
-            -- TODO: Implement experience reward
+        if quest.rewards.experience and QuestSystem.player and QuestSystem.player.stats then
+            QuestSystem.player.stats:addExperience(quest.rewards.experience)
         end
 
         -- Give items
-        if quest.rewards.items then
-            -- Would need inventory reference
-            -- TODO: Implement item rewards
+        if quest.rewards.items and QuestSystem.player and QuestSystem.player.inventory then
+            for _, itemReward in ipairs(quest.rewards.items) do
+                QuestSystem.player.inventory:addItem(itemReward.id, itemReward.quantity or 1)
+            end
         end
     end
 

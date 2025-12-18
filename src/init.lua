@@ -22,5 +22,6 @@ src.inventory = {}
 src.dialogue = {}
 src.ui = {}
 src.data = {}
+src.modding = {}
 
 return src

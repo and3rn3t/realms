@@ -78,30 +78,59 @@ function DialogueSystem.selectChoice(index)
     end
 end
 
+-- Set player reference for actions
+function DialogueSystem.setPlayer(player)
+    DialogueSystem.player = player
+end
+
 -- Check condition
 function DialogueSystem.checkCondition(condition)
+    if not condition then return true end
+
     -- Simple condition checking (can be expanded)
     if condition.type == "quest" then
         -- Check quest state
-        return true -- Placeholder
+        local QuestSystem = require("src.quests.QuestSystem")
+        if condition.state == "completed" then
+            return QuestSystem.isCompleted(condition.questId)
+        elseif condition.state == "active" then
+            return QuestSystem.isActive(condition.questId)
+        elseif condition.state == "not_started" then
+            return not QuestSystem.isActive(condition.questId) and not QuestSystem.isCompleted(condition.questId)
+        end
+        return true
     elseif condition.type == "item" then
         -- Check item in inventory
-        return true -- Placeholder
+        if DialogueSystem.player and DialogueSystem.player.inventory then
+            return DialogueSystem.player.inventory:hasItem(condition.itemId, condition.quantity or 1)
+        end
+        return false
     end
     return true
 end
 
 -- Execute action
 function DialogueSystem.executeAction(action)
+    if not action then return end
+
     if action.type == "quest" then
         -- Start/complete quest
-        -- TODO: Implement quest action
+        local QuestSystem = require("src.quests.QuestSystem")
+        if action.action == "start" then
+            QuestSystem.startQuest(action.questId)
+        elseif action.action == "complete" then
+            QuestSystem.completeQuest(action.questId)
+        end
     elseif action.type == "give_item" then
         -- Give item to player
-        -- TODO: Implement give item action
+        if DialogueSystem.player and DialogueSystem.player.inventory then
+            DialogueSystem.player.inventory:addItem(action.itemId, action.quantity or 1)
+        end
     elseif action.type == "take_item" then
         -- Take item from player
-        -- TODO: Implement take item action
+        if DialogueSystem.player and DialogueSystem.player.inventory then
+            DialogueSystem.player.inventory:removeItem(action.itemId, action.quantity or 1)
+        end
     end
 end
 

@@ -25,6 +25,8 @@ Input.keybinds = {
     inventory = {"i", "tab"},
     menu = {"escape", "m"},
     run = {"lshift", "rshift"},
+    f5 = {"f5"},
+    f9 = {"f9"},
 }
 
 -- Initialize input system
