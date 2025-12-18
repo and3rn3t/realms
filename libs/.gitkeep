@@ -1,0 +1,8 @@
+-- Placeholder for libraries
+-- Add libraries here:
+-- - hump (gamestate, camera, timer, vector)
+-- - bump.lua (collision)
+-- - anim8 (animations)
+-- - push (resolution)
+-- - lume (utilities)
+

@@ -1,13 +1,26 @@
 --[[
     Source initialization
-    Add your game modules here
+    Load all game modules here
 ]]
 
 local src = {}
 
--- Example: Load game modules
--- src.player = require("src.player")
--- src.world = require("src.world")
--- src.ui = require("src.ui")
+-- Core systems
+src.core = {}
+src.core.StateManager = require("src.core.StateManager")
+src.core.Input = require("src.core.Input")
+src.core.AssetManager = require("src.core.AssetManager")
+src.core.Camera = require("src.core.Camera")
+src.core.Resolution = require("src.core.Resolution")
+
+-- Game modules
+src.entities = {}
+src.world = {}
+src.combat = {}
+src.quests = {}
+src.inventory = {}
+src.dialogue = {}
+src.ui = {}
+src.data = {}
 
 return src
