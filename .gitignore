@@ -46,6 +46,7 @@ lua_modules/
 
 # IDE/Editor
 .vscode/
+!.vscode/settings.json.example
 .idea/
 *.swp
 *.swo

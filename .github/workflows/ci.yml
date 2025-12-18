@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  lint:
+    name: Lint Lua Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Lua and Luarocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks
+
+      - name: Install Luacheck
+        run: |
+          luarocks install luacheck
+
+      - name: Run Luacheck
+        run: |
+          luacheck . --no-color
+

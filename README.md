@@ -94,15 +94,40 @@ local lume = require("libs.lume")
 
 ## Development
 
+### Quick Setup
+
+Run the setup script to configure your development environment:
+
+**Linux/macOS:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\setup.ps1
+```
+
+This will:
+- Install luacheck (if needed)
+- Configure Git pre-commit hooks
+- Set up VS Code settings (if available)
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed development instructions.
+
 ### Code Style
 
 This project uses:
 - 4 spaces for indentation
 - [luacheck](https://github.com/mpeterv/luacheck) for linting
+- Pre-commit hooks for automatic linting
 
 ### Linting
 
 ```bash
+make lint
+# or
 luacheck .
 ```
 

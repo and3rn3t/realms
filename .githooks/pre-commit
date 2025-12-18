@@ -1,0 +1,32 @@
+#!/bin/sh
+# Pre-commit hook to run luacheck before commits
+
+echo "Running luacheck..."
+
+# Check if luacheck is installed
+if ! command -v luacheck > /dev/null 2>&1; then
+    echo "Warning: luacheck is not installed. Skipping lint check."
+    echo "Install it with: luarocks install luacheck"
+    exit 0
+fi
+
+# Get staged Lua files
+STAGED_LUA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$' || true)
+
+# If no Lua files are staged, skip
+if [ -z "$STAGED_LUA_FILES" ]; then
+    echo "No Lua files staged. Skipping luacheck."
+    exit 0
+fi
+
+# Run luacheck on staged Lua files
+echo "$STAGED_LUA_FILES" | xargs luacheck --no-color
+
+# If luacheck found issues, exit with error
+if [ $? -ne 0 ]; then
+    echo "Luacheck found issues. Please fix them before committing."
+    exit 1
+fi
+
+echo "Luacheck passed!"
+exit 0
